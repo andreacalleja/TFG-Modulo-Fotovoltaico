@@ -397,8 +397,7 @@ def crear_circuito_serie(strings, n_celula_string, bypass, m):
 
     circuit.R('cc', 'vin{}_{}'.format(n_celula_string, strings), 'pos',
               0.020 @ u_Ω)
-    circuit.V('bias', 'pos', 'vout{}_{}'.format(n_celula_string, strings),
-              1 @ u_V)
+    circuit.V('bias', 'pos', circuit.gnd, 1 @ u_V)
     print(circuit)
     return circuit
 
@@ -668,7 +667,7 @@ def crear_matriz(strings, n_celula_string, sombra):
         for fila in matriz_fd:
             matriz_fila = []
             for columna in fila.rstrip().split(','):
-                matriz_fila.append(int(columna))
+                matriz_fila.append(float(columna))
 
             collected_matrix.append(matriz_fila)
 
