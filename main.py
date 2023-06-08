@@ -416,6 +416,7 @@ def guardar(nombre,
     temp=float(temp.get(1.0, "end-1c"))
     dbypass = dbypass.get()
     sombra = sombra.get()
+    area_celula=int(base_celula*altura_celula)
     print(conexion, orientacion, ancho, largo, base_celula, altura_celula,
           nstrings)
     n_filas, n_columnas = trasponer(ancho, largo, base_celula, altura_celula,
@@ -429,7 +430,7 @@ def guardar(nombre,
         modulo_fotovoltaico = crear_modulo_fotovoltaico(conexion, orientacion,
                                                         nstrings,
                                                         n_celulas_string,
-                                                        dbypass, m, fuente_intensidad,Rs,Rsh)
+                                                        dbypass, m, fuente_intensidad,Rs,Rsh,area_celula)
         # modulo_fotovoltaico = crear_modulo_fotovoltaico(conexion=conex, orientacion=orientacion, strings=strings, n_celula_string=n_celula_string,
         # bypass=d_bypass)
         sim = simulacion(modulo_fotovoltaico, conexion, lim_volt_serie,
@@ -442,9 +443,9 @@ def guardar(nombre,
     return conexion, sombra, fuente_intensidad,Rs,Rsh,temp
 
 
-def crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,Rs,Rsh):
+def crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,Rs,Rsh,area_celula):
     """ Creamos circuito """
-    I = fuente_intensidad @ u_A
+    I = (fuente_intensidad * area_celula) @ u_A
     circuit = Circuit('Test')
     circuit.include(spice_library['1N4148'])
     circuit.model('Bypass', 'D', IS=3e-7, RS=2.9 / 1000, N=0.01, EG=0.1, XTI=3,
@@ -542,9 +543,9 @@ def crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,R
     return circuit
 
 
-def crear_circuito_paralelo(strings, n_celula_string, bypass, m, fuente_intensidad,Rs,Rsh):
+def crear_circuito_paralelo(strings, n_celula_string, bypass, m, fuente_intensidad,Rs,Rsh,area_celula):
     """ Creamos circuito """
-    I = fuente_intensidad @ u_A
+    I = (fuente_intensidad * area_celula) @ u_A
     circuit = Circuit('Test')
     circuit.include(spice_library['1N4148'])
     circuit.model('Bypass', 'D', IS=3e-7, RS=2.9 / 1000, N=0.01, EG=0.1, XTI=3,
@@ -691,7 +692,7 @@ def dibujar(intensidad, voltage, conexion, lim_volt_serie, lim_volt_paralelo,
             lim_int_serie, lim_int_paralelo):
     """ Grafica tension frente a intensidad """
     plt.xlabel('Tensión (V)')
-    plt.ylabel('Corriente (A)')
+    plt.ylabel('Densidad de Corriente (A/cm2)')
     plt.title('Curva I-V')
     if conexion == 's':
         plt.xlim(0, lim_volt_serie)
@@ -796,13 +797,13 @@ def crear_modulo_fotovoltaico(conexion,
                               m,
                               fuente_intensidad,
                               Rs,
-                              Rsh):
+                              Rsh,area_celula):
     """ TODO añadir descripcion de metodo """
     if conexion == 's':
-        return crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,Rs,Rsh)
+        return crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,Rs,Rsh,area_celula)
 
     elif conexion == 'p':
-        return crear_circuito_paralelo(strings, n_celula_string, bypass, m,fuente_intensidad,Rs,Rsh)
+        return crear_circuito_paralelo(strings, n_celula_string, bypass, m,fuente_intensidad,Rs,Rsh,area_celula)
 
 
 def crear_matriz(strings, n_celula_string, sombra):
