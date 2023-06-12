@@ -176,7 +176,7 @@ def gui():
 
     # frame texto intensidad
     label_texto_intensidad = tk.Label(master=frame_texto_intensidad,
-                                    text="Indique el valor de la fuente de intensidad en A:",
+                                    text="Indique el valor de la densidad de corriente (A/cm2):",
                                     bg="white")  # width=10, height=1,
     label_texto_intensidad.pack()  # añadir la etiqueta al frame
     frame_texto_intensidad.pack(fill=tk.X)  # añadimos el frame a la interfaz
@@ -190,7 +190,7 @@ def gui():
 
     # frame texto Rs
     label_texto_Rs = tk.Label(master=frame_texto_Rs,
-                                  text="Indique el valor de Rs en Ohm:",
+                                  text="Indique el valor de Rs (Ohm·cm2):",
                                   bg="white")  # width=10, height=1,
     label_texto_Rs.pack()  # añadir la etiqueta al frame
     frame_texto_Rs.pack(fill=tk.X)  # añadimos el frame a la interfaz
@@ -204,7 +204,7 @@ def gui():
 
     # frame texto Rsh
     label_texto_Rsh = tk.Label(master=frame_texto_Rsh,
-                                  text="Indique el valor de Rp en Ohm:",
+                                  text="Indique el valor de Rp (Ohm·cm2):",
                                   bg="white")  # width=10, height=1,
     label_texto_Rsh.pack()  # añadir la etiqueta al frame
     frame_texto_Rsh.pack(fill=tk.X)  # añadimos el frame a la interfaz
@@ -217,7 +217,7 @@ def gui():
     frame_input_Rsh.pack(fill=tk.X)  # añadimos el frame a la interfaz
     # frame texto temperatura de simulación
     label_texto_temp = tk.Label(master=frame_texto_temp,
-                                  text="Indique la temperatura de simulación:",
+                                  text="Indique la temperatura de simulación (ªC):",
                                   bg="white")  # width=10, height=1,
     label_texto_temp.pack()  # añadir la etiqueta al frame
     frame_texto_temp.pack(fill=tk.X)  # añadimos el frame a la interfaz
@@ -326,9 +326,9 @@ def guardar_fichero(intensidad, voltage,nombre,descripcion,conexion,orientacion,
                  "Base célula (cm): {} "
                  "Altura célua (cm): {} "
                  "Numero de strings: {} "
-                 "Fuente de intensidad (A): {} "
-                 "Rs (Ohm): {} "
-                 "Rsh (Ohm): {} "
+                 "Densidad de corriente (A/cm2): {} "
+                 "Rs (Ohm·cm2): {} "
+                 "Rsh (Ohm·cm2): {} "
                  "Temperatura de simulación (ªC): {} "
                  "Conexion bypass: {} \n".format(conexion,
                                                  orientacion,
@@ -404,11 +404,11 @@ def guardar(nombre,
     descripcion=descripcion.get(1.0, "end-1c")
     conexion = sp.get()
     orientacion = orientacion.get()
-    ancho = int(area_a.get(1.0, "end-1c"))
-    largo = int(area_l.get())
+    ancho = float(area_a.get(1.0, "end-1c"))
+    largo = float(area_l.get())
     # largo = int(area_l.get(1.0, "end-1c"))
-    base_celula = int(celula_a.get(1.0, "end-1c"))
-    altura_celula = int(celula_l.get(1.0, "end-1c"))
+    base_celula = float(celula_a.get(1.0, "end-1c"))
+    altura_celula = float(celula_l.get(1.0, "end-1c"))
     nstrings = int(nstrings.get(1.0, "end-1c"))
     fuente_intensidad=float(intensidad.get(1.0, "end-1c"))
     Rs=float(Rs.get(1.0, "end-1c"))
@@ -416,7 +416,7 @@ def guardar(nombre,
     temp=float(temp.get(1.0, "end-1c"))
     dbypass = dbypass.get()
     sombra = sombra.get()
-    area_celula=int(base_celula*altura_celula)
+    area_celula=float(base_celula*altura_celula)
     print(conexion, orientacion, ancho, largo, base_celula, altura_celula,
           nstrings)
     n_filas, n_columnas = trasponer(ancho, largo, base_celula, altura_celula,
@@ -446,6 +446,8 @@ def guardar(nombre,
 def crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,Rs,Rsh,area_celula):
     """ Creamos circuito """
     I = (fuente_intensidad * area_celula) @ u_A
+    Rs = Rs / area_celula
+    Rsh = Rsh / area_celula
     circuit = Circuit('Test')
     circuit.include(spice_library['1N4148'])
     circuit.model('Bypass', 'D', IS=3e-7, RS=2.9 / 1000, N=0.01, EG=0.1, XTI=3,
@@ -457,7 +459,7 @@ def crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,R
     circuit.R('p1_1', 'in1_1', circuit.gnd, Rsh @ u_Ω)
     circuit.R('s1_1', 'in1_1', 'vin1_1', Rs @ u_Ω)
     if not n_celula_string == 1:
-        circuit.R('c1_1', 'vin1_1', 'vout2_1', 0.02 @ u_Ω)
+        circuit.R('c1_1', 'vin1_1', 'vout2_1', 0.02/area_celula @ u_Ω)
 
     if bypass == 'Sin diodo':
         for j in range(1, strings + 1):
@@ -505,7 +507,7 @@ def crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,R
                           model='Bypass')
             if not j == strings:
                 circuit.R('c{}_{}'.format(i, j), 'vin{}_{}'.format(i, j),
-                          'vout1_{}'.format(j + 1), 0.02 @ u_Ω)
+                          'vout1_{}'.format(j + 1), 0.02/area_celula @ u_Ω)
 
     elif bypass == 'Diodo por celula':
         # Bucle
@@ -534,7 +536,7 @@ def crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,R
 
             if not j == strings:
                 circuit.R('c{}_{}'.format(i, j), 'vin{}_{}'.format(i, j),
-                          'vout1_{}'.format(j + 1), 0.02 @ u_Ω)
+                          'vout1_{}'.format(j + 1), 0.02/area_celula @ u_Ω)
 
     circuit.R('cc', 'vin{}_{}'.format(n_celula_string, strings), 'pos',
               0.020 @ u_Ω)
@@ -546,6 +548,8 @@ def crear_circuito_serie(strings, n_celula_string, bypass, m,fuente_intensidad,R
 def crear_circuito_paralelo(strings, n_celula_string, bypass, m, fuente_intensidad,Rs,Rsh,area_celula):
     """ Creamos circuito """
     I = (fuente_intensidad * area_celula) @ u_A
+    Rs = Rs / area_celula
+    Rsh = Rsh / area_celula
     circuit = Circuit('Test')
     circuit.include(spice_library['1N4148'])
     circuit.model('Bypass', 'D', IS=3e-7, RS=2.9 / 1000, N=0.01, EG=0.1, XTI=3,
@@ -692,14 +696,16 @@ def dibujar(intensidad, voltage, conexion, lim_volt_serie, lim_volt_paralelo,
             lim_int_serie, lim_int_paralelo):
     """ Grafica tension frente a intensidad """
     plt.xlabel('Tensión (V)')
-    plt.ylabel('Densidad de Corriente (A/cm2)')
+    plt.ylabel('Corriente (A)')
     plt.title('Curva I-V')
+    """
     if conexion == 's':
         plt.xlim(0, lim_volt_serie)
         plt.ylim(0, lim_int_serie, 0.01)
     else:
         plt.xlim(0, lim_volt_paralelo)
         plt.ylim(0, lim_int_paralelo, 0.01)
+    """
 
     plt.plot(voltage, intensidad)
     plt.show()
